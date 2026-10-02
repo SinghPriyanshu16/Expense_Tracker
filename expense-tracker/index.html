@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledger — Expense Tracker</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h1>Ledger</h1>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a class="nav-item active" data-page="dashboard">
+            <i data-lucide="layout-dashboard"></i> Overview
+        </a>
+        <a class="nav-item" data-page="transactions">
+            <i data-lucide="receipt"></i> Transactions
+        </a>
+        <a class="nav-item" data-page="analytics">
+            <i data-lucide="bar-chart-3"></i> Analytics
+        </a>
+        <a class="nav-item" data-page="alerts">
+            <i data-lucide="bell"></i> Alerts
+            <span class="nav-badge" id="alert-badge" style="display:none">0</span>
+        </a>
+        <a class="nav-item" data-page="settings">
+            <i data-lucide="settings"></i> Settings
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        Built with vanilla JS
+    </div>
+</aside>
+
+<div class="main-content">
+    <header class="header">
+        <div class="header-left">
+            <button class="menu-toggle" id="menu-toggle">
+                <i data-lucide="menu" style="width:20px;height:20px;"></i>
+            </button>
+            <h2 id="header-title">Overview</h2>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-import">
+                <i data-lucide="upload"></i> Import
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-export">
+                <i data-lucide="download"></i> Export
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-add-txn">
+                <i data-lucide="plus"></i> New transaction
+            </button>
+        </div>
+    </header>
+
+    <div class="page-content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <section class="page-section active" id="page-dashboard">
+            <div style="margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                <span style="color:var(--text-muted); font-size:0.8rem;">Showing:</span>
+                <select class="filter-select" id="filter-date">
+                    <option value="all">All time</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d" selected>Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                </select>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background:#f0fdf4; color:#059669;">
+                            <i data-lucide="wallet"></i>
+                        </div>
+                    </div>
+                    <div class="card-label">Total spent</div>
+                    <div class="card-value" id="card-total">$0</div>
+                    <div class="card-sub" id="card-total-sub">0 transactions</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background:#eff6ff; color:#2563eb;">
+                            <i data-lucide="hash"></i>
+                        </div>
+                    </div>
+                    <div class="card-label">Transactions</div>
+                    <div class="card-value" id="card-txn-count">0</div>
+                    <div class="card-sub">in this period</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background:#faf5ff; color:#7c3aed;">
+                            <i data-lucide="tag"></i>
+                        </div>
+                    </div>
+                    <div class="card-label">Categories</div>
+                    <div class="card-value" id="card-categories">0</div>
+                    <div class="card-sub">unique</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background:#fff7ed; color:#d97706;">
+                            <i data-lucide="calendar"></i>
+                        </div>
+                    </div>
+                    <div class="card-label">Daily average</div>
+                    <div class="card-value" id="card-avg-daily">$0</div>
+                    <div class="card-sub" id="card-avg-sub">over 0 days</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background:#fef2f2; color:#dc2626;">
+                            <i data-lucide="alert-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="card-label">Anomalies</div>
+                    <div class="card-value" id="card-alerts">0</div>
+                    <div class="card-sub">detected</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Spending by category</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-category"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Spending over time</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-timeline"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alerts-section">
+                <h3>Recent alerts</h3>
+                <div class="alerts-list" id="alerts-list"></div>
+            </div>
+        </section>
+
+        <!-- ===== TRANSACTIONS ===== -->
+        <section class="page-section" id="page-transactions">
+            <div class="transactions-section">
+                <h3>All transactions</h3>
+                <div class="table-controls">
+                    <div class="search-box">
+                        <span class="search-icon"><i data-lucide="search"></i></span>
+                        <input type="text" id="search-input" placeholder="Search merchants, categories...">
+                    </div>
+                    <select class="filter-select" id="filter-category">
+                        <option value="all">All categories</option>
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills & Utilities">Bills & Utilities</option>
+                        <option value="Health & Fitness">Health & Fitness</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Education">Education</option>
+                        <option value="Personal Care">Personal Care</option>
+                        <option value="Subscriptions">Subscriptions</option>
+                        <option value="Transfers">Transfers</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="date" style="width:100px">Date</th>
+                                <th data-sort="merchant">Merchant</th>
+                                <th data-sort="amount" style="width:100px">Amount</th>
+                                <th data-sort="category" style="width:190px">Category</th>
+                                <th style="width:130px">Notes</th>
+                                <th style="width:40px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="txn-tbody"></tbody>
+                    </table>
+                    <div class="table-footer">
+                        <span id="table-info">Showing 0 results</span>
+                        <div class="pagination" id="pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ANALYTICS ===== -->
+        <section class="page-section" id="page-analytics">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Top merchants</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-merchants"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Week over week</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-weekly"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid" style="margin-top:0;">
+                <div class="chart-card">
+                    <h3>Category breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-category-full"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Spending trend</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-timeline-full"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ALERTS ===== -->
+        <section class="page-section" id="page-alerts">
+            <div class="alerts-section">
+                <h3>Spending alerts</h3>
+                <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:14px; max-width:600px;">
+                    Transactions and spending patterns that look unusual based on your history.
+                    You can dismiss individual alerts or adjust the sensitivity in settings.
+                </p>
+                <div class="alerts-list" id="alerts-list-full"></div>
+            </div>
+        </section>
+
+        <!-- ===== SETTINGS ===== -->
+        <section class="page-section" id="page-settings">
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h4>Detection sensitivity</h4>
+                    <div class="form-group">
+                        <label>Threshold (standard deviations)</label>
+                        <input type="number" id="anomaly-threshold" value="2.0" min="0.5" max="5" step="0.1">
+                        <div style="color:var(--text-muted); font-size:0.72rem; margin-top:4px;">
+                            Lower values flag more things. Default is 2.0.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h4>Data</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <button class="btn btn-secondary" id="btn-reset-data">Reset to sample data</button>
+                        <button class="btn btn-danger" id="btn-clear-data">Clear everything</button>
+                    </div>
+                </div>
+
+                <div class="settings-card full-width" style="grid-column: span 2;">
+                    <h4>How categorization works</h4>
+                    <div style="color:var(--text-secondary); font-size:0.82rem; line-height:1.7;">
+                        <p>Transactions are categorized automatically using a few approaches, tried in order:</p>
+                        <ol style="padding-left:18px; margin-top:6px;">
+                            <li>If you've manually corrected a merchant before, that correction is used.</li>
+                            <li>The merchant name is matched against a database of known merchants.</li>
+                            <li>Keywords in the name are checked against category keywords.</li>
+                            <li>If nothing matches well, fuzzy string matching is used as a fallback.</li>
+                        </ol>
+                        <p style="margin-top:10px;">
+                            You can click any category label in the transactions table to change it.
+                            The system remembers your corrections for next time.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">New transaction</h3>
+            <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="txn-date">
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="txn-amount" step="0.01" min="0" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Merchant</label>
+                <input type="text" id="txn-merchant" placeholder="e.g. Starbucks, Amazon, Uber">
+            </div>
+            <div class="form-group">
+                <label>Category <span style="color:var(--text-muted); font-weight:400;">(leave blank to auto-detect)</span></label>
+                <select id="txn-category">
+                    <option value="">Auto-detect</option>
+                    <option value="Food & Dining">Food & Dining</option>
+                    <option value="Groceries">Groceries</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Bills & Utilities">Bills & Utilities</option>
+                    <option value="Health & Fitness">Health & Fitness</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Education">Education</option>
+                    <option value="Personal Care">Personal Care</option>
+                    <option value="Subscriptions">Subscriptions</option>
+                    <option value="Transfers">Transfers</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes <span style="color:var(--text-muted); font-weight:400;">(optional)</span></label>
+                <input type="text" id="txn-notes" placeholder="Add a note">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="modal-save">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Import CSV Modal -->
+<div class="modal-overlay" id="import-modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Import CSV</h3>
+            <button class="modal-close" id="import-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--text-secondary); font-size:0.82rem; margin-bottom:14px;">
+                Upload a CSV with columns: <code style="background:#f3f4f6; padding:1px 4px; border-radius:3px; font-size:0.78rem;">date, merchant, amount</code>.
+                Categories will be detected automatically.
+            </p>
+            <div class="drop-zone" id="drop-zone">
+                <i data-lucide="file-up"></i>
+                <p>Drop a CSV file here, or click to browse</p>
+                <input type="file" id="csv-file-input" accept=".csv">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="import-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="js/categorizer.js"></script>
+<script src="js/anomaly.js"></script>
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+<script>
+    // Initialize Lucide icons after DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) lucide.createIcons();
+    });
+</script>
+
+</body>
+</html>
